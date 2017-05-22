@@ -1,0 +1,23 @@
+
+var game = new Phaser.Game(800, 600, Phaser.AUTO, '');
+
+
+var SpriteBase = function(name, width, height, xOrigin, yOrigin, preciseCollision, images)
+{
+  this.name = name;
+  this.width = width;
+  this.height = height;
+  this.xOrigin = xOrigin;
+  this.yOrigin = yOrigin;
+  this.preciseCollision = preciseCollision;
+  this.images = images;
+  this.frames = images.length;
+
+  return this;
+}
+
+
+game.state.add('setup', setupState);
+
+
+//game.state.start("setup");

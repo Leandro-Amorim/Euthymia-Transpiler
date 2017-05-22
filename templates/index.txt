@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Phaser Test</title>
+  </head>
+  <body>
+
+    <script src="js/phaser.min.js" charset="utf-8"></script>
+    <script src="js/setup.js" charset="utf-8"></script>
+    <script src="js/boot.js" charset="utf-8"></script>
+  </body>
+</html>
