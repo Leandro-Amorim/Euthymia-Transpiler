@@ -1,2 +1,2 @@
-node main.js
-PAUSE
+@echo off
+nw "%cd%"

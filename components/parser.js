@@ -1,7 +1,7 @@
 var fs = require('fs');
 var path = require('path');
-var cheerio = require('cheerio');
 
+var parser = new window.DOMParser();
 
 module.exports = {
   parseProject : function(gmPath){
@@ -35,56 +35,65 @@ module.exports = {
     {
       if(path.extname(gmPathFolder[i]) == ".gmx")
       {
-        var $ = cheerio.load(fs.readFileSync(gmPath+gmPathFolder[i]),{decodeEntities: true});
+        $ = parser.parseFromString(fs.readFileSync(gmPath+gmPathFolder[i]), "text/xml");
         break;
       }
     }
 
-    $("sound").each(function(i,elem)
+    var sounds = $.getElementsByTagName("sound");
+    for(var i=0; i<sounds.length; i++)
     {
-      Project.sounds.push(path.basename($(this).text()));
-    });
+      Project.sounds.push(path.basename(sounds[i].innerHTML));
+    }
 
-    $("sprite").each(function(i,elem)
+    var sprites = $.getElementsByTagName("sprite");
+    for(var i=0; i<sprites.length; i++)
     {
-      Project.sprites.push(path.basename($(this).text()));
-    });
+      Project.sprites.push(path.basename(sprites[i].innerHTML));
+    }
 
-    $("background").each(function(i,elem)
+    var backgrounds = $.getElementsByTagName("background");
+    for(var i=0; i<backgrounds.length; i++)
     {
-      Project.backgrounds.push(path.basename($(this).text()));
-    });
+      Project.backgrounds.push(path.basename(backgrounds[i].innerHTML));
+    }
 
-    $("script").each(function(i,elem)
+    var scripts = $.getElementsByTagName("script");
+    for(var i=0; i<scripts.length; i++)
     {
-      Project.scripts.push(path.basename($(this).text()));
-    });
+      Project.scripts.push(path.basename(scripts[i].innerHTML));
+    }
 
-    $("font").each(function(i,elem)
+    var fonts = $.getElementsByTagName("font");
+    for(var i=0; i<fonts.length; i++)
     {
-      Project.fonts.push(path.basename($(this).text()));
-    });
+      Project.fonts.push(path.basename(fonts[i].innerHTML));
+    }
 
-    $("object").each(function(i,elem)
+    var objects = $.getElementsByTagName("object");
+    for(var i=0; i<objects.length; i++)
     {
-      Project.objects.push(path.basename($(this).text()));
-    });
+      Project.objects.push(path.basename(objects[i].innerHTML));
+    }
 
-    $("room").each(function(i,elem)
+    var rooms = $.getElementsByTagName("room");
+    for(var i=0; i<rooms.length; i++)
     {
-      Project.rooms.push(path.basename($(this).text()));
-    });
+      Project.rooms.push(path.basename(rooms[i].innerHTML));
+    }
 
-    $("constant").each(function(i,elem)
+    var constants = $.getElementsByTagName("constant");
+    for(var i=0; i<constants.length; i++)
     {
-      var c = {name: $(this).attr('name'),value: $(this).text()};
+      var c = {name: constants[i].getAttribute("name"), value: constants[i].innerHTML};
       Project.constants.push(c);
-    });
+    }
 
-    $("extension").each(function(i,elem)
+    var extensions = $.getElementsByTagName("extension");
+    for(var i=0; i<extensions.length; i++)
     {
-      Project.extensions.push(path.basename($(this).text()));
-    });
+      Project.extensions.push(path.basename(extensions[i].innerHTML));
+    }
 
 
     ///////////////////Sprites
@@ -127,18 +136,19 @@ module.exports = {
 
     sprite.name = name;
 
-    var $ = cheerio.load(fs.readFileSync(object.path + 'sprites/' + name + ".sprite.gmx"),{decodeEntities: true});
+    var $ = parser.parseFromString(fs.readFileSync(object.path + 'sprites/' + name + ".sprite.gmx"), "text/xml");
 
-    sprite.xOrigin = $("xorig").text();
-    sprite.yOrigin = $("yorigin").text();
+    sprite.xOrigin = $.getElementsByTagName("xorig")[0].innerHTML;
+    sprite.yOrigin = $.getElementsByTagName("yorigin")[0].innerHTML;
 
-    sprite.width = $("width").text();
-    sprite.height = $("height").text();
+    sprite.width = $.getElementsByTagName("width")[0].innerHTML;
+    sprite.height = $.getElementsByTagName("height")[0].innerHTML;
 
-    var colKind = parseInt($("colkind").text());
+    var colKind = parseInt($.getElementsByTagName("colkind")[0].innerHTML);
     sprite.preciseCollision = !colKind;
 
-    sprite.images = this.parseFrames($("frames").text());
+
+    sprite.images = this.parseFrames($.getElementsByTagName("frames")[0].innerHTML);
     sprite.frames = sprite.images.length;
 
 
@@ -193,63 +203,72 @@ module.exports = {
 
     obj.name = name;
 
-    var $ = cheerio.load(fs.readFileSync(object.path + 'objects/' + name + ".object.gmx"),{decodeEntities: true});
+    var $ = parser.parseFromString(fs.readFileSync(object.path + 'objects/' + name + ".object.gmx"), "text/xml");
 
-    obj.sprite = $("spriteName").text();
-    obj.solid = !!parseInt($("solid").text());
 
-    obj.visible = !!parseInt($("visible").text());
-    obj.depth = parseInt($("depth").text());
-    obj.persistent = !!parseInt($("persistent").text());
-
-    if ($("parentName").text() != '<undefined>')
+    if ($.getElementsByTagName("spriteName")[0].innerHTML != "<undefined>" && $.getElementsByTagName("spriteName")[0].innerHTML != '&lt;undefined&gt;')
     {
-      obj.parent = $("parentName").text();
+      obj.sprite = $.getElementsByTagName("spriteName")[0].innerHTML;
     }
 
-    if ($("maskName").text() != '<undefined>')
+    obj.solid = !!parseInt($.getElementsByTagName("solid")[0].innerHTML);
+
+    obj.visible = !!parseInt($.getElementsByTagName("visible")[0].innerHTML);
+    obj.depth = parseInt($.getElementsByTagName("depth")[0].innerHTML);
+    obj.persistent = !!parseInt($.getElementsByTagName("persistent")[0].innerHTML);
+
+    if ($.getElementsByTagName("parentName")[0].innerHTML != '<undefined>' && $.getElementsByTagName("parentName")[0].innerHTML != '&lt;undefined&gt;')
     {
-      obj.mask = $("maskName").text();
+      obj.parent = $.getElementsByTagName("parentName")[0].innerHTML;
     }
 
-    obj.physics.usePhysics = !!parseInt($("PhysicsObject").text());
-    obj.physics.isSensor = !!parseInt($("PhysicsObjectSensor").text());
-    obj.physics.shape = parseInt($("PhysicsObjectShape").text());
-    obj.physics.density = parseFloat($("PhysicsObjectDensity").text());
-    obj.physics.restitution = parseFloat($("PhysicsObjectRestitution").text());
-    obj.physics.group = parseInt($("PhysicsObjectGroup").text());
-    obj.physics.linearDamping = parseFloat($("PhysicsObjectLinearDamping").text());
-    obj.physics.angularDamping = parseFloat($("PhysicsObjectAngularDamping").text());
-    obj.physics.friction = parseFloat($("PhysicsObjectFriction").text());
-    obj.physics.awake = !!parseInt($("PhysicsObjectAwake").text());
-    obj.physics.kinematic = !!parseInt($("PhysicsObjectKinematic").text());
-
-    $("point").each(function(i,elem)
+    if ($.getElementsByTagName("maskName")[0].innerHTML != '<undefined>' && $.getElementsByTagName("maskName")[0].innerHTML != '&lt;undefined&gt;')
     {
-      var str = $(this).text();
+      obj.mask = $.getElementsByTagName("maskName")[0].innerHTML;
+    }
+
+    obj.physics.usePhysics = !!parseInt($.getElementsByTagName("PhysicsObject")[0].innerHTML);
+    obj.physics.isSensor = !!parseInt($.getElementsByTagName("PhysicsObjectSensor")[0].innerHTML);
+    obj.physics.shape = parseInt($.getElementsByTagName("PhysicsObjectShape")[0].innerHTML);
+    obj.physics.density = parseFloat($.getElementsByTagName("PhysicsObjectDensity")[0].innerHTML);
+    obj.physics.restitution = parseFloat($.getElementsByTagName("PhysicsObjectRestitution")[0].innerHTML);
+    obj.physics.group = parseInt($.getElementsByTagName("PhysicsObjectGroup")[0].innerHTML);
+    obj.physics.linearDamping = parseFloat($.getElementsByTagName("PhysicsObjectLinearDamping")[0].innerHTML);
+    obj.physics.angularDamping = parseFloat($.getElementsByTagName("PhysicsObjectAngularDamping")[0].innerHTML);
+    obj.physics.friction = parseFloat($.getElementsByTagName("PhysicsObjectFriction")[0].innerHTML);
+    obj.physics.awake = !!parseInt($.getElementsByTagName("PhysicsObjectAwake")[0].innerHTML);
+    obj.physics.kinematic = !!parseInt($.getElementsByTagName("PhysicsObjectKinematic")[0].innerHTML);
+
+    var points = $.getElementsByTagName("point");
+    for(var i=0; i<points.length;i++)
+    {
+      var str = points[i].innerHTML;
+
       obj.physics.shapePoints.push(
         {
           x: parseInt(str.slice(0, str.indexOf(","))),
           y: parseInt(str.slice(str.indexOf(",")+1,str.length))
-        }
-    );
-    });
+        });
+    }
 
-    obj.events.create = $('string','event[eventtype="0"]').text();
-    obj.events.step = $('string','event[eventtype="3"][enumb="0"]').text();
-    obj.events.beginStep = $('string','event[eventtype="3"][enumb="1"]').text();
-    obj.events.endStep = $('string','event[eventtype="3"][enumb="2"]').text();
-    obj.events.destroy = $('string','event[eventtype="1"]').text();
-    obj.events.draw = $('string','event[eventtype="8"][enumb="0"]').text();
-    obj.events.drawGUI = $('string','event[eventtype="8"][enumb="64"]').text();
-    obj.events.drawBegin = $('string','event[eventtype="8"][enumb="72"]').text();
-    obj.events.drawEnd = $('string','event[eventtype="8"][enumb="73"]').text();
-    obj.events.drawGUIBegin = $('string','event[eventtype="8"][enumb="74"]').text();
-    obj.events.drawGUIEnd = $('string','event[eventtype="8"][enumb="75"]').text();
+    if ($.querySelector('event[eventtype="0"] string')) {obj.events.create = $.querySelector('event[eventtype="0"] string').innerHTML;}
+    if ($.querySelector('event[eventtype="3"][enumb="0"] string')) {obj.events.step = $.querySelector('event[eventtype="3"][enumb="0"] string').innerHTML;}
+    if ($.querySelector('event[eventtype="3"][enumb="1"] string')) {obj.events.beginStep = $.querySelector('event[eventtype="3"][enumb="1"] string').innerHTML;}
+    if ($.querySelector('event[eventtype="3"][enumb="2"] string')) {obj.events.endStep = $.querySelector('event[eventtype="3"][enumb="2"] string').innerHTML;}
+    if ($.querySelector('event[eventtype="1"] string')) {obj.events.destroy = $.querySelector('event[eventtype="1"] string').innerHTML;}
+    if ($.querySelector('event[eventtype="8"][enumb="0"] string')) {obj.events.draw = $.querySelector('event[eventtype="8"][enumb="0"] string').innerHTML;}
+    if ($.querySelector('event[eventtype="8"][enumb="64"] string')) {obj.events.drawGUI = $.querySelector('event[eventtype="8"][enumb="64"] string').innerHTML;}
+    if ($.querySelector('event[eventtype="8"][enumb="72"] string')) {obj.events.drawBegin = $.querySelector('event[eventtype="8"][enumb="72"] string').innerHTML;}
+    if ($.querySelector('event[eventtype="8"][enumb="73"] string')) {obj.events.drawEnd = $.querySelector('event[eventtype="8"][enumb="73"] string').innerHTML;}
+    if ($.querySelector('event[eventtype="8"][enumb="74"] string')) {obj.events.drawGUIBegin = $.querySelector('event[eventtype="8"][enumb="74"] string').innerHTML;}
+    if ($.querySelector('event[eventtype="8"][enumb="75"] string')) {obj.events.drawGUIEnd = $.querySelector('event[eventtype="8"][enumb="75"] string').innerHTML;}
 
     for(var i=0; i< 12; i++)
     {
-        obj.events["alarm"+String(i)]= $('string','event[eventtype="2"][enumb="'+i+'"]').text();
+      if ($.querySelector('event[eventtype="2"][enumb="'+i+'"] string'))
+      {
+        obj.events["alarm"+String(i)]= $.querySelector('event[eventtype="2"][enumb="'+i+'"] string').innerHTML;
+      }
     }
 
     //INCOMPLETO
@@ -286,102 +305,108 @@ module.exports = {
 
     room.name = name;
 
-    var $ = cheerio.load(fs.readFileSync(object.path + 'rooms/' + name + ".room.gmx"),{decodeEntities: true});
+    var $ = parser.parseFromString(fs.readFileSync(object.path + 'rooms/' + name + ".room.gmx"), "text/xml");
 
-    room.caption = $("caption").text();
-    room.width = parseInt($("width").text());
-    room.height = parseInt($("height").text());
-    room.speed = parseInt($("speed").text());
-    room.persistent = !!parseInt($("persistent").text());
-    room.backgroundColor = parseInt($("colour").text());
-    room.showBackgroundColor = !!parseInt($("showcolour").text());
-    room.creationCode = $("code").text();
-    room.enableViews = !!parseInt($("enableViews").text());
-    room.clearViewBackground = !!parseInt($("clearViewBackground").text());
-    room.clearDisplayBuffer = !!parseInt($("clearDisplayBuffer").text());
+    room.caption = $.getElementsByTagName("caption")[0].innerHTML;
+    room.width = parseInt($.getElementsByTagName("width")[0].innerHTML);
+    room.height = parseInt($.getElementsByTagName("height")[0].innerHTML);
+    room.speed = parseInt($.getElementsByTagName("speed")[0].innerHTML);
+    room.persistent = !!parseInt($.getElementsByTagName("persistent")[0].innerHTML);
+    room.backgroundColor = parseInt($.getElementsByTagName("colour")[0].innerHTML);
+    room.showBackgroundColor = !!parseInt($.getElementsByTagName("showcolour")[0].innerHTML);
+    room.creationCode = $.getElementsByTagName("code")[0].innerHTML;
+    room.enableViews = !!parseInt($.getElementsByTagName("enableViews")[0].innerHTML);
+    room.clearViewBackground = !!parseInt($.getElementsByTagName("clearViewBackground")[0].innerHTML);
+    room.clearDisplayBuffer = !!parseInt($.getElementsByTagName("clearDisplayBuffer")[0].innerHTML);
 
-    $("background").each(function(i,elem)
+
+    var backgrounds = $.getElementsByTagName("background");
+    for(var i=0; i<backgrounds.length; i++)
     {
       room.backgrounds.push(
         {
-          visible: !!parseInt($(this).attr('visible')),
-          foreground: !!parseInt($(this).attr('foreground')),
-          name: $(this).attr('name'),
-          x: parseInt($(this).attr('x')),
-          y: parseInt($(this).attr('y')),
-          htiled: !!parseInt($(this).attr('htiled')),
-          vtiled: !!parseInt($(this).attr('vtiled')),
-          hspeed: parseInt($(this).attr('hspeed')),
-          vspeed: parseInt($(this).attr('vspeed')),
-          stretch: !!parseInt($(this).attr('stretch')),
+          visible: !!parseInt(backgrounds[i].getAttribute('visible')),
+          foreground: !!parseInt(backgrounds[i].getAttribute('foreground')),
+          name: backgrounds[i].getAttribute('name'),
+          x: parseInt(backgrounds[i].getAttribute('x')),
+          y: parseInt(backgrounds[i].getAttribute('y')),
+          htiled: !!parseInt(backgrounds[i].getAttribute('htiled')),
+          vtiled: !!parseInt(backgrounds[i].getAttribute('vtiled')),
+          hspeed: parseInt(backgrounds[i].getAttribute('hspeed')),
+          vspeed: parseInt(backgrounds[i].getAttribute('vspeed')),
+          stretch: !!parseInt(backgrounds[i].getAttribute('stretch')),
         }
       );
-    });
+    }
 
-    $("view").each(function(i,elem)
+    var views = $.getElementsByTagName("view");
+    for(var i=0; i<views.length; i++)
     {
       room.views.push(
         {
-          visible: !!parseInt($(this).attr('visible')),
-          objName: $(this).attr('objName'),
-          xView: parseInt($(this).attr('xview')),
-          yView: parseInt($(this).attr('yview')),
-          wView: parseInt($(this).attr('wview')),
-          hView: parseInt($(this).attr('hview')),
-          xPort: parseInt($(this).attr('xport')),
-          yPort: parseInt($(this).attr('yport')),
-          wPort: parseInt($(this).attr('wport')),
-          hPort: parseInt($(this).attr('hport')),
-          hBorder: parseInt($(this).attr('hborder')),
-          vBorder: parseInt($(this).attr('vborder')),
-          hspeed: parseInt($(this).attr('hspeed')),
-          vspeed: parseInt($(this).attr('vspeed'))
+          visible: !!parseInt(views[i].getAttribute('visible')),
+          objName: (views[i].getAttribute('objName') != "<undefined>" && views[i].getAttribute('objName') != '&lt;undefined&gt;') ? views[i].getAttribute('objName') : "",
+          xView: parseInt(views[i].getAttribute('xview')),
+          yView: parseInt(views[i].getAttribute('yview')),
+          wView: parseInt(views[i].getAttribute('wview')),
+          hView: parseInt(views[i].getAttribute('hview')),
+          xPort: parseInt(views[i].getAttribute('xport')),
+          yPort: parseInt(views[i].getAttribute('yport')),
+          wPort: parseInt(views[i].getAttribute('wport')),
+          hPort: parseInt(views[i].getAttribute('hport')),
+          hBorder: parseInt(views[i].getAttribute('hborder')),
+          vBorder: parseInt(views[i].getAttribute('vborder')),
+          hspeed: parseInt(views[i].getAttribute('hspeed')),
+          vspeed: parseInt(views[i].getAttribute('vspeed'))
         }
       );
-    });
+    }
 
-    $("instance").each(function(i,elem)
+    var instances = $.getElementsByTagName("instance");
+    for(var i=0; i<instances.length; i++)
     {
       room.instances.push(
         {
-          objName: $(this).attr('objName'),
-          x: parseInt($(this).attr('x')),
-          y: parseInt($(this).attr('y')),
-          name: $(this).attr('name'),
-          code: $(this).attr('code'),
-          scaleX: parseInt($(this).attr('scaleX')),
-          scaleY: parseInt($(this).attr('scaleY')),
-          color: parseInt($(this).attr('colour')),
-          rotation: parseInt($(this).attr('rotation')),
+          objName: instances[i].getAttribute('objName'),
+          x: parseInt(instances[i].getAttribute('x')),
+          y: parseInt(instances[i].getAttribute('y')),
+          name: instances[i].getAttribute('name'),
+          code: instances[i].getAttribute('code'),
+          scaleX: parseFloat(instances[i].getAttribute('scalex')),
+          scaleY: parseFloat(instances[i].getAttribute('scaley')),
+          color: parseInt(instances[i].getAttribute('colour')),
+          rotation: parseInt(instances[i].getAttribute('rotation')),
         }
       );
-    });
+    }
 
-    $("tile").each(function(i,elem)
+    var tiles = $.getElementsByTagName("tile");
+    for(var i=0; i<tiles.length; i++)
     {
       room.tiles.push(
         {
-          bgName: $(this).attr('bgName'),
-          x: parseInt($(this).attr('x')),
-          y: parseInt($(this).attr('y')),
-          w: parseInt($(this).attr('w')),
-          h: parseInt($(this).attr('h')),
-          xo: parseInt($(this).attr('xo')),
-          yo: parseInt($(this).attr('yo')),
-          id: parseInt($(this).attr('id')),
-          name: $(this).attr('name'),
-          depth: parseInt($(this).attr('depth')),
-          color: parseInt($(this).attr('colour')),
-          scaleX: parseInt($(this).attr('scaleX')),
-          scaleY: parseInt($(this).attr('scaleY')),
+          bgName: tiles[i].getAttribute('bgName'),
+          x: parseInt(tiles[i].getAttribute('x')),
+          y: parseInt(tiles[i].getAttribute('y')),
+          w: parseInt(tiles[i].getAttribute('w')),
+          h: parseInt(tiles[i].getAttribute('h')),
+          xo: parseInt(tiles[i].getAttribute('xo')),
+          yo: parseInt(tiles[i].getAttribute('yo')),
+          id: parseInt(tiles[i].getAttribute('id')),
+          name: tiles[i].getAttribute('name'),
+          depth: parseInt(tiles[i].getAttribute('depth')),
+          color: parseInt(tiles[i].getAttribute('colour')),
+          scaleX: parseFloat(tiles[i].getAttribute('scalex')),
+          scaleY: parseFloat(tiles[i].getAttribute('scaley')),
         }
       );
-    });
+    }
 
-    room.physics.usePhysics = !!parseInt($(this).attr('PhysicsWorld'));
-    room.physics.gravityX = parseFloat($(this).attr('PhysicsWorldGravityX'));
-    room.physics.gravityY = parseFloat($(this).attr('PhysicsWorldGravityY'));
-    room.physics.pixelsToMeters = parseFloat($(this).attr('PhysicsWorldPixToMeters'));
+
+    room.physics.usePhysics = !!parseInt($.getElementsByTagName('PhysicsWorld')[0].innerHTML);
+    room.physics.gravityX = parseFloat($.getElementsByTagName('PhysicsWorldGravityX')[0].innerHTML);
+    room.physics.gravityY = parseFloat($.getElementsByTagName('PhysicsWorldGravityY')[0].innerHTML);
+    room.physics.pixelsToMeters = parseFloat($.getElementsByTagName('PhysicsWorldPixToMeters')[0].innerHTML);
 
     return room;
 
